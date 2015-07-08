@@ -5,6 +5,8 @@ VisualStudioVersion = 12.0.30723.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Tutorials00", "Tutorials00\Tutorials00.vcxproj", "{6FC2C142-B7B0-4849-A3F0-29BBAD4B9B6A}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Turorial01", "Turorial01\Turorial01.vcxproj", "{65275722-5E91-488D-8A53-A5F563A7801E}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Win32 = Debug|Win32
@@ -15,6 +17,10 @@ Global
 		{6FC2C142-B7B0-4849-A3F0-29BBAD4B9B6A}.Debug|Win32.Build.0 = Debug|Win32
 		{6FC2C142-B7B0-4849-A3F0-29BBAD4B9B6A}.Release|Win32.ActiveCfg = Release|Win32
 		{6FC2C142-B7B0-4849-A3F0-29BBAD4B9B6A}.Release|Win32.Build.0 = Release|Win32
+		{65275722-5E91-488D-8A53-A5F563A7801E}.Debug|Win32.ActiveCfg = Debug|Win32
+		{65275722-5E91-488D-8A53-A5F563A7801E}.Debug|Win32.Build.0 = Debug|Win32
+		{65275722-5E91-488D-8A53-A5F563A7801E}.Release|Win32.ActiveCfg = Release|Win32
+		{65275722-5E91-488D-8A53-A5F563A7801E}.Release|Win32.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
