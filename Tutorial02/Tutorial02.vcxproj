@@ -92,6 +92,12 @@
   <ItemGroup>
     <ClCompile Include="Tutorial02.cpp" />
   </ItemGroup>
+  <ItemGroup>
+    <FxCompile Include="Tutorial02.fx">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Effect</ShaderType>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">4.1</ShaderModel>
+    </FxCompile>
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

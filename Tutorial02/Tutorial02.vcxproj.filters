@@ -34,4 +34,7 @@
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>
+  <ItemGroup>
+    <FxCompile Include="Tutorial02.fx" />
+  </ItemGroup>
 </Project>

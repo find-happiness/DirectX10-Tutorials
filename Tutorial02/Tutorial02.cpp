@@ -3,27 +3,53 @@
 #include <D3D10.h>
 #include <D3DX10.h>
 
+//--------------------------------------------------------------------------------------
+// Structures
+//--------------------------------------------------------------------------------------
+struct SimpleVertex
+{
+	D3DXVECTOR3 Pos;
+};
+
+
 HWND g_hWnd = NULL;
 HINSTANCE g_hInstance = NULL;
 
 ID3D10Device* g_pDevice = NULL;
 IDXGISwapChain* g_pSwapChain = NULL;
 D3D10_DRIVER_TYPE g_pDriverType;
-ID3D10RenderTargetView* g_pTargetView;
+ID3D10RenderTargetView* g_pTargetView = NULL;
+ID3D10Effect* g_pEffect = NULL;
+ID3D10EffectTechnique* g_pTechnique = NULL;
+ID3D10InputLayout* g_pInputLayout = NULL;
+ID3D10Buffer* g_pVectorBuffer = NULL;
 
 HRESULT InitWindows(HINSTANCE hInstance, int nCmdShow);
 HRESULT InitDevice();
 void CleanupDevice();
 void Render();
-LRESULT CALLBACK WinProc(HWND,UINT,WPARAM,LPARAM);
+LRESULT CALLBACK WinProc(HWND, UINT, WPARAM, LPARAM);
 
-int WINAPI wWinMain(HINSTANCE hInstance,HINSTANCE hPreInstance,LPWSTR lpCmdLine,int nCmdShow)
+///-------------------------------------------------------------------------------------------------
+/// <summary>	Window main. </summary>
+///
+/// <remarks>	Song, 2015/7/9. </remarks>
+///
+/// <param name="hInstance">   	The instance. </param>
+/// <param name="hPreInstance">	The pre instance. </param>
+/// <param name="lpCmdLine">   	The command line. </param>
+/// <param name="nCmdShow">	   	The command show. </param>
+///
+/// <returns>	A WINAPI. </returns>
+///-------------------------------------------------------------------------------------------------
+
+int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPreInstance, LPWSTR lpCmdLine, int nCmdShow)
 {
-	
+
 	UNREFERENCED_PARAMETER(hPreInstance);
 	UNREFERENCED_PARAMETER(lpCmdLine);
 
-	if (FAILED(InitWindows(hInstance,nCmdShow)))
+	if (FAILED(InitWindows(hInstance, nCmdShow)))
 	{
 		return 0;
 	}
@@ -39,7 +65,7 @@ int WINAPI wWinMain(HINSTANCE hInstance,HINSTANCE hPreInstance,LPWSTR lpCmdLine,
 	while (msg.message != WM_QUIT)
 	{
 
-		if (PeekMessage(&msg,NULL,0,0,PM_REMOVE))
+		if (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE))
 		{
 			TranslateMessage(&msg);
 			DispatchMessage(&msg);
@@ -53,9 +79,19 @@ int WINAPI wWinMain(HINSTANCE hInstance,HINSTANCE hPreInstance,LPWSTR lpCmdLine,
 	return 0;
 }
 
-HRESULT InitWindows(HINSTANCE hInstance,int nCmdLine)
+///-------------------------------------------------------------------------------------------------
+/// <summary>	Initialises the windows. </summary>
+///
+/// <remarks>	Song, 2015/7/9. </remarks>
+///
+/// <param name="hInstance">	The instance. </param>
+/// <param name="nCmdLine"> 	The command line. </param>
+///
+/// <returns>	A hResult. </returns>
+///-------------------------------------------------------------------------------------------------
+HRESULT InitWindows(HINSTANCE hInstance, int nCmdLine)
 {
-	
+
 	WNDCLASSEX wcex;
 	wcex.lpfnWndProc = WinProc;
 	wcex.cbClsExtra = 0;
@@ -91,7 +127,7 @@ HRESULT InitWindows(HINSTANCE hInstance,int nCmdLine)
 	return S_OK;
 }
 
-LRESULT CALLBACK WinProc(HWND hWnd,UINT message,WPARAM wParam,LPARAM lParam)
+LRESULT CALLBACK WinProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
 	PAINTSTRUCT ps;
 	switch (message)
@@ -146,15 +182,15 @@ HRESULT InitDevice()
 	D3D10_DRIVER_TYPE driverTypes[]
 	{
 		D3D10_DRIVER_TYPE_HARDWARE,
-		D3D10_DRIVER_TYPE_REFERENCE
+			D3D10_DRIVER_TYPE_REFERENCE
 	};
 
 	UINT typesLenght = sizeof(driverTypes) / sizeof(driverTypes[0]);
 
-	for (int typeIndex = 0; typeIndex < typesLenght;typeIndex ++)
+	for (int typeIndex = 0; typeIndex < typesLenght; typeIndex++)
 	{
 		g_pDriverType = driverTypes[typeIndex];
-		hr = D3D10CreateDeviceAndSwapChain(NULL, g_pDriverType, NULL, createDeviceFlag, D3D10_SDK_VERSION,&sd, &g_pSwapChain, &g_pDevice);
+		hr = D3D10CreateDeviceAndSwapChain(NULL, g_pDriverType, NULL, createDeviceFlag, D3D10_SDK_VERSION, &sd, &g_pSwapChain, &g_pDevice);
 		if (SUCCEEDED(hr))
 			break;
 	}
@@ -194,7 +230,7 @@ HRESULT InitDevice()
 
 	if (FAILED(hr))
 		return hr;
-	
+
 	g_pDevice->OMSetRenderTargets(1, &g_pTargetView, pdepthStencilView);
 
 	D3D10_VIEWPORT vp;
@@ -207,6 +243,76 @@ HRESULT InitDevice()
 
 	g_pDevice->RSSetViewports(1, &vp);
 
+	// Create the effect
+
+	DWORD dwShaderFlags = D3D10_SHADER_ENABLE_STRICTNESS;
+#if defined(DEBUG) || defined(_DEBUG)
+	dwShaderFlags |= D3D10_SHADER_DEBUG;
+#endif
+
+	hr = D3DX10CreateEffectFromFile(L"Tutorial02.fx", NULL, NULL, "fx_4_0", dwShaderFlags, 0,
+		g_pDevice, NULL, NULL, &g_pEffect, NULL, NULL);
+
+	if (FAILED(hr))
+	{
+		MessageBox(NULL,
+			L"The FX file cannot be located.  Please run this executable from the directory that contains the FX file.", L"Error", MB_OK);
+		return hr;
+	}
+
+	g_pTechnique = g_pEffect->GetTechniqueByName("Render");
+
+	D3D10_INPUT_ELEMENT_DESC layout[]
+	{
+		{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D10_INPUT_PER_VERTEX_DATA, 0 },
+	};
+
+	UINT numElements = sizeof(layout) / sizeof(layout[0]);
+
+	D3D10_PASS_DESC passDesc;
+
+	g_pTechnique->GetPassByIndex(0)->GetDesc(&passDesc);
+
+	hr = g_pDevice->CreateInputLayout(layout, numElements, passDesc.pIAInputSignature, passDesc.IAInputSignatureSize, &g_pInputLayout);
+
+	if (FAILED(hr))
+	{
+		return hr;
+	}
+
+	g_pDevice->IASetInputLayout(g_pInputLayout);
+
+	// Create vertex buffer
+	SimpleVertex vertices[] =
+	{
+		D3DXVECTOR3(0.0f, 0.5f, 0.5f),
+		D3DXVECTOR3(0.5f, -0.5f, 0.5f),
+		D3DXVECTOR3(-0.5f, -0.5f, 0.5f),
+	};
+
+	D3D10_BUFFER_DESC bufferDesc;
+	bufferDesc.Usage = D3D10_USAGE_DEFAULT;
+	bufferDesc.BindFlags = D3D10_BIND_VERTEX_BUFFER;
+	bufferDesc.ByteWidth = sizeof(SimpleVertex) * 3;
+	bufferDesc.CPUAccessFlags = 0;
+	bufferDesc.MiscFlags = 0;
+
+	D3D10_SUBRESOURCE_DATA InitData;
+	InitData.pSysMem = vertices;
+
+	hr = g_pDevice->CreateBuffer(&bufferDesc, &InitData, &g_pVectorBuffer);
+	if (FAILED(hr))
+	{
+		return hr;
+	}
+
+	UINT stride = sizeof(SimpleVertex);
+	UINT offset = 0;
+
+	g_pDevice->IASetVertexBuffers(0, 1, &g_pVectorBuffer, &stride, &offset);
+
+	g_pDevice->IASetPrimitiveTopology(D3D10_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+
 	return S_OK;
 }
 
@@ -214,6 +320,10 @@ void CleanupDevice()
 {
 	if (g_pDevice)
 		g_pDevice->ClearState();
+
+	if (g_pVectorBuffer) g_pVectorBuffer->Release();
+	if (g_pInputLayout) g_pInputLayout->Release();
+	if (g_pEffect) g_pEffect->Release();
 	if (g_pTargetView)
 		g_pTargetView->Release();
 	if (g_pSwapChain)
@@ -224,8 +334,19 @@ void CleanupDevice()
 
 void Render()
 {
-	float color[4] {0.5f,0.5f,0.5f,0.5f};
+
+	float color[4] = { 0.0f, 0.125f, 0.3f, 1.0f };
 
 	g_pDevice->ClearRenderTargetView(g_pTargetView, color);
+
+	D3D10_TECHNIQUE_DESC techDesc;
+	g_pTechnique->GetDesc(&techDesc);
+
+	for (UINT p = 0; p < techDesc.Passes; p++)
+	{
+		g_pTechnique->GetPassByIndex(p)->Apply(0);
+		g_pDevice->Draw(3, 0);
+	}
+
 	g_pSwapChain->Present(0, 0);
 }
