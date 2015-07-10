@@ -1,13 +1,15 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 2013
-VisualStudioVersion = 12.0.31101.0
+VisualStudioVersion = 12.0.30723.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Tutorials00", "Tutorials00\Tutorials00.vcxproj", "{6FC2C142-B7B0-4849-A3F0-29BBAD4B9B6A}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Turorial01", "Turorial01\Turorial01.vcxproj", "{65275722-5E91-488D-8A53-A5F563A7801E}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Tutorial02", "Tutorial02\Tutorial02.vcxproj", "{08820E91-1E74-4E3D-84D0-4722A0CBD3D3}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Tutorial03", "Tutorial03\Tutorial03.vcxproj", "{05734961-CE24-42BA-8504-27EE17C6A241}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -46,6 +48,15 @@ Global
 		{08820E91-1E74-4E3D-84D0-4722A0CBD3D3}.Release|Win32.ActiveCfg = Release|Win32
 		{08820E91-1E74-4E3D-84D0-4722A0CBD3D3}.Release|Win32.Build.0 = Release|Win32
 		{08820E91-1E74-4E3D-84D0-4722A0CBD3D3}.Release|x64.ActiveCfg = Release|Win32
+		{05734961-CE24-42BA-8504-27EE17C6A241}.Debug|Win32.ActiveCfg = Debug|Win32
+		{05734961-CE24-42BA-8504-27EE17C6A241}.Debug|Win32.Build.0 = Debug|Win32
+		{05734961-CE24-42BA-8504-27EE17C6A241}.Debug|x64.ActiveCfg = Debug|Win32
+		{05734961-CE24-42BA-8504-27EE17C6A241}.Profile|Win32.ActiveCfg = Release|Win32
+		{05734961-CE24-42BA-8504-27EE17C6A241}.Profile|Win32.Build.0 = Release|Win32
+		{05734961-CE24-42BA-8504-27EE17C6A241}.Profile|x64.ActiveCfg = Release|Win32
+		{05734961-CE24-42BA-8504-27EE17C6A241}.Release|Win32.ActiveCfg = Release|Win32
+		{05734961-CE24-42BA-8504-27EE17C6A241}.Release|Win32.Build.0 = Release|Win32
+		{05734961-CE24-42BA-8504-27EE17C6A241}.Release|x64.ActiveCfg = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
