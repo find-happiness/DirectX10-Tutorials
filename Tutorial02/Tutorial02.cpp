@@ -76,7 +76,8 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPreInstance, LPWSTR lpCmdLin
 		}
 	}
 	CleanupDevice();
-	return 0;
+
+	return (int)msg.wParam;
 }
 
 ///-------------------------------------------------------------------------------------------------
@@ -160,10 +161,12 @@ HRESULT InitDevice()
 	UINT width = rc.right - rc.left;
 
 	DXGI_SWAP_CHAIN_DESC sd;
+
+	ZeroMemory(&sd, sizeof(sd));
 	sd.BufferCount = 1;
 	sd.BufferDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
-	sd.BufferDesc.Height = rc.bottom - rc.top;
-	sd.BufferDesc.Width = rc.right - rc.left;
+	sd.BufferDesc.Height = height;
+	sd.BufferDesc.Width = width;
 	sd.BufferDesc.RefreshRate.Denominator = 1;
 	sd.BufferDesc.RefreshRate.Numerator = 60;
 	sd.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
@@ -200,38 +203,41 @@ HRESULT InitDevice()
 
 	ID3D10Texture2D* pBackBuffer;
 
-	hr = g_pSwapChain->GetBuffer(0, __uuidof(ID3D10Texture2D), reinterpret_cast<void**>(&pBackBuffer));
+	hr = g_pSwapChain->GetBuffer(0, __uuidof(ID3D10Texture2D), (LPVOID*)(&pBackBuffer));
 	if (FAILED(hr))
 		return hr;
 
-	g_pDevice->CreateRenderTargetView(pBackBuffer, 0, &g_pTargetView);
-
-	D3D10_TEXTURE2D_DESC depthStencilDesc;
-	depthStencilDesc.SampleDesc.Count = 1;
-	depthStencilDesc.SampleDesc.Quality = 0;
-	depthStencilDesc.ArraySize = 1;
-	depthStencilDesc.BindFlags = D3D10_BIND_DEPTH_STENCIL;
-	depthStencilDesc.CPUAccessFlags = 0;
-	depthStencilDesc.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
-	depthStencilDesc.Height = height;
-	depthStencilDesc.Width = width;
-	depthStencilDesc.MipLevels = 1;
-	depthStencilDesc.MiscFlags = 0;
-	depthStencilDesc.Usage = D3D10_USAGE_DEFAULT;
-
-	ID3D10Texture2D* pDepthStencilBuffer;
-
-	hr = g_pDevice->CreateTexture2D(&depthStencilDesc, 0, &pDepthStencilBuffer);
+	hr = g_pDevice->CreateRenderTargetView(pBackBuffer, NULL, &g_pTargetView);
+	pBackBuffer->Release();
 	if (FAILED(hr))
 		return hr;
 
-	ID3D10DepthStencilView* pdepthStencilView;
-	hr = g_pDevice->CreateDepthStencilView(pDepthStencilBuffer, 0, &pdepthStencilView);
+	//D3D10_TEXTURE2D_DESC depthStencilDesc;
+	//depthStencilDesc.SampleDesc.Count = 1;
+	//depthStencilDesc.SampleDesc.Quality = 0;
+	//depthStencilDesc.ArraySize = 1;
+	//depthStencilDesc.BindFlags = D3D10_BIND_DEPTH_STENCIL;
+	//depthStencilDesc.CPUAccessFlags = 0;
+	//depthStencilDesc.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
+	//depthStencilDesc.Height = height;
+	//depthStencilDesc.Width = width;
+	//depthStencilDesc.MipLevels = 1;
+	//depthStencilDesc.MiscFlags = 0;
+	//depthStencilDesc.Usage = D3D10_USAGE_DEFAULT;
 
-	if (FAILED(hr))
-		return hr;
+	//ID3D10Texture2D* pDepthStencilBuffer;
 
-	g_pDevice->OMSetRenderTargets(1, &g_pTargetView, pdepthStencilView);
+	//hr = g_pDevice->CreateTexture2D(&depthStencilDesc, 0, &pDepthStencilBuffer);
+	//if (FAILED(hr))
+	//	return hr;
+
+	//ID3D10DepthStencilView* pdepthStencilView;
+	//hr = g_pDevice->CreateDepthStencilView(pDepthStencilBuffer, 0, &pdepthStencilView);
+
+	//if (FAILED(hr))
+	//	return hr;
+
+	g_pDevice->OMSetRenderTargets(1, &g_pTargetView, NULL);
 
 	D3D10_VIEWPORT vp;
 	vp.Width = width;
@@ -243,8 +249,8 @@ HRESULT InitDevice()
 
 	g_pDevice->RSSetViewports(1, &vp);
 
+	/*
 	// Create the effect
-
 	DWORD dwShaderFlags = D3D10_SHADER_ENABLE_STRICTNESS;
 #if defined(DEBUG) || defined(_DEBUG)
 	dwShaderFlags |= D3D10_SHADER_DEBUG;
@@ -311,6 +317,75 @@ HRESULT InitDevice()
 
 	g_pDevice->IASetVertexBuffers(0, 1, &g_pVectorBuffer, &stride, &offset);
 
+	g_pDevice->IASetPrimitiveTopology(D3D10_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+
+	return S_OK;
+	*/
+
+	// Create the effect
+	DWORD dwShaderFlags = D3D10_SHADER_ENABLE_STRICTNESS;
+#if defined( DEBUG ) || defined( _DEBUG )
+	// Set the D3D10_SHADER_DEBUG flag to embed debug information in the shaders.
+	// Setting this flag improves the shader debugging experience, but still allows 
+	// the shaders to be optimized and to run exactly the way they will run in 
+	// the release configuration of this program.
+	dwShaderFlags |= D3D10_SHADER_DEBUG;
+#endif
+	hr = D3DX10CreateEffectFromFile(L"Tutorial02.fx", NULL, NULL, "fx_4_0", dwShaderFlags, 0,
+		g_pDevice, NULL, NULL, &g_pEffect, NULL, NULL);
+	if (FAILED(hr))
+	{
+		MessageBox(NULL,
+			L"The FX file cannot be located.  Please run this executable from the directory that contains the FX file.", L"Error", MB_OK);
+		return hr;
+	}
+
+	// Obtain the technique
+	g_pTechnique = g_pEffect->GetTechniqueByName("Render");
+
+	// Define the input layout
+	D3D10_INPUT_ELEMENT_DESC layout[] =
+	{
+		{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D10_INPUT_PER_VERTEX_DATA, 0 },
+	};
+	UINT numElements = sizeof(layout) / sizeof(layout[0]);
+
+	// Create the input layout
+	D3D10_PASS_DESC PassDesc;
+	g_pTechnique->GetPassByIndex(0)->GetDesc(&PassDesc);
+	hr = g_pDevice->CreateInputLayout(layout, numElements, PassDesc.pIAInputSignature,
+		PassDesc.IAInputSignatureSize, &g_pInputLayout);
+	if (FAILED(hr))
+		return hr;
+
+	// Set the input layout
+	g_pDevice->IASetInputLayout(g_pInputLayout);
+
+	// Create vertex buffer
+	SimpleVertex vertices[] =
+	{
+		D3DXVECTOR3(0.0f, 0.5f, 0.5f),
+		D3DXVECTOR3(0.5f, -0.5f, 0.5f),
+		D3DXVECTOR3(-0.5f, -0.5f, 0.5f),
+	};
+	D3D10_BUFFER_DESC bd;
+	bd.Usage = D3D10_USAGE_DEFAULT;
+	bd.ByteWidth = sizeof(SimpleVertex) * 3;
+	bd.BindFlags = D3D10_BIND_VERTEX_BUFFER;
+	bd.CPUAccessFlags = 0;
+	bd.MiscFlags = 0;
+	D3D10_SUBRESOURCE_DATA InitData;
+	InitData.pSysMem = vertices;
+	hr = g_pDevice->CreateBuffer(&bd, &InitData, &g_pVectorBuffer);
+	if (FAILED(hr))
+		return hr;
+
+	// Set vertex buffer
+	UINT stride = sizeof(SimpleVertex);
+	UINT offset = 0;
+	g_pDevice->IASetVertexBuffers(0, 1, &g_pVectorBuffer, &stride, &offset);
+
+	// Set primitive topology
 	g_pDevice->IASetPrimitiveTopology(D3D10_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
 	return S_OK;
