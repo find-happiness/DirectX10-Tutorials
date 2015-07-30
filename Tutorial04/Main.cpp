@@ -6,7 +6,7 @@
 struct SimpleVexter
 {
 	D3DXVECTOR3 pos;
-	D3DXVECTOR4 color;
+	D3DXVECTOR2 tex;
 };
 
 ID3D10Device* gpDevice;
@@ -19,6 +19,8 @@ ID3D10EffectTechnique* g_pEffectTechnique;
 ID3D10EffectMatrixVariable* g_pMatrixVariableWorld;
 ID3D10EffectMatrixVariable* g_pMatrixVariableView;
 ID3D10EffectMatrixVariable* g_pMatrixVariablePrjection;
+ID3D10EffectVectorVariable* g_pVectorVariableMeshColor;
+ID3D10EffectShaderResourceVariable* g_pShaderResourceVariableTex;
 
 ID3D10InputLayout* g_pInputLayout;
 ID3D10Buffer* g_pBufferVertex;
@@ -29,6 +31,9 @@ D3DXMATRIX viewMatrix;
 D3DXMATRIX prejectionMatrix;
 
 D3D10_DRIVER_TYPE driverType;
+ID3D10ShaderResourceView* g_pShaderResourceView;
+
+D3DXVECTOR4 g_vMeshColor(0.7f, 0.7f, 0.7f, 1.0f);
 
 HRESULT InitWindows(HINSTANCE hInstance,int nCmdShow);
 HRESULT InitDevice();
@@ -227,11 +232,14 @@ HRESULT InitDevice()
 	g_pMatrixVariableWorld = gpEffect->GetVariableByName("World")->AsMatrix();
 	g_pMatrixVariableView = gpEffect->GetVariableByName("View")->AsMatrix();
 	g_pMatrixVariablePrjection = gpEffect->GetVariableByName("Projection")->AsMatrix();
+	g_pVectorVariableMeshColor = gpEffect->GetVariableByName("meshColor")->AsVector();
+	g_pShaderResourceVariableTex = gpEffect->GetVariableByName("texBuffer")->AsShaderResource();
+
 
 	D3D10_INPUT_ELEMENT_DESC layout[] = 
 	{
 		{"POSITION",0,DXGI_FORMAT_R32G32B32_FLOAT,0,0,D3D10_INPUT_PER_VERTEX_DATA,0},
-		{"COLOR",0,DXGI_FORMAT_R32G32B32A32_FLOAT,0,12,D3D10_INPUT_PER_VERTEX_DATA,0}
+		{"TEXCOORD",0,DXGI_FORMAT_R32G32_FLOAT,0,12,D3D10_INPUT_PER_VERTEX_DATA,0}
 	};
 
 	UINT numLayout = sizeof(layout) / sizeof(layout[0]);
@@ -251,20 +259,41 @@ HRESULT InitDevice()
 
 	SimpleVexter vertices[] =
 	{
-		{ D3DXVECTOR3(-1.0f, 1.0f, -1.0f), D3DXVECTOR4(0.0f, 0.0f, 1.0f, 1.0f) },
-		{ D3DXVECTOR3(1.0f, 1.0f, -1.0f), D3DXVECTOR4(0.0f, 1.0f, 0.0f, 1.0f) },
-		{ D3DXVECTOR3(1.0f, 1.0f, 1.0f), D3DXVECTOR4(0.0f, 1.0f, 1.0f, 1.0f) },
-		{ D3DXVECTOR3(-1.0f, 1.0f, 1.0f), D3DXVECTOR4(1.0f, 0.0f, 0.0f, 1.0f) },
-		{ D3DXVECTOR3(-1.0f, -1.0f, -1.0f), D3DXVECTOR4(1.0f, 0.0f, 1.0f, 1.0f) },
-		{ D3DXVECTOR3(1.0f, -1.0f, -1.0f), D3DXVECTOR4(1.0f, 1.0f, 0.0f, 1.0f) },
-		{ D3DXVECTOR3(1.0f, -1.0f, 1.0f), D3DXVECTOR4(1.0f, 1.0f, 1.0f, 1.0f) },
-		{ D3DXVECTOR3(-1.0f, -1.0f, 1.0f), D3DXVECTOR4(0.0f, 0.0f, 0.0f, 1.0f) },
+		{ D3DXVECTOR3(-1.0f, 1.0f, -1.0f), D3DXVECTOR2(0.0f, 0.0f) },
+		{ D3DXVECTOR3(1.0f, 1.0f, -1.0f), D3DXVECTOR2(1.0f, 0.0f) },
+		{ D3DXVECTOR3(1.0f, 1.0f, 1.0f), D3DXVECTOR2(1.0f, 1.0f) },
+		{ D3DXVECTOR3(-1.0f, 1.0f, 1.0f), D3DXVECTOR2(0.0f, 1.0f) },
+
+		{ D3DXVECTOR3(-1.0f, -1.0f, -1.0f), D3DXVECTOR2(0.0f, 0.0f) },
+		{ D3DXVECTOR3(1.0f, -1.0f, -1.0f), D3DXVECTOR2(1.0f, 0.0f) },
+		{ D3DXVECTOR3(1.0f, -1.0f, 1.0f), D3DXVECTOR2(1.0f, 1.0f) },
+		{ D3DXVECTOR3(-1.0f, -1.0f, 1.0f), D3DXVECTOR2(0.0f, 1.0f) },
+
+		{ D3DXVECTOR3(-1.0f, -1.0f, 1.0f), D3DXVECTOR2(0.0f, 0.0f) },
+		{ D3DXVECTOR3(-1.0f, -1.0f, -1.0f), D3DXVECTOR2(1.0f, 0.0f) },
+		{ D3DXVECTOR3(-1.0f, 1.0f, -1.0f), D3DXVECTOR2(1.0f, 1.0f) },
+		{ D3DXVECTOR3(-1.0f, 1.0f, 1.0f), D3DXVECTOR2(0.0f, 1.0f) },
+
+		{ D3DXVECTOR3(1.0f, -1.0f, 1.0f), D3DXVECTOR2(0.0f, 0.0f) },
+		{ D3DXVECTOR3(1.0f, -1.0f, -1.0f), D3DXVECTOR2(1.0f, 0.0f) },
+		{ D3DXVECTOR3(1.0f, 1.0f, -1.0f), D3DXVECTOR2(1.0f, 1.0f) },
+		{ D3DXVECTOR3(1.0f, 1.0f, 1.0f), D3DXVECTOR2(0.0f, 1.0f) },
+
+		{ D3DXVECTOR3(-1.0f, -1.0f, -1.0f), D3DXVECTOR2(0.0f, 0.0f) },
+		{ D3DXVECTOR3(1.0f, -1.0f, -1.0f), D3DXVECTOR2(1.0f, 0.0f) },
+		{ D3DXVECTOR3(1.0f, 1.0f, -1.0f), D3DXVECTOR2(1.0f, 1.0f) },
+		{ D3DXVECTOR3(-1.0f, 1.0f, -1.0f), D3DXVECTOR2(0.0f, 1.0f) },
+
+		{ D3DXVECTOR3(-1.0f, -1.0f, 1.0f), D3DXVECTOR2(0.0f, 0.0f) },
+		{ D3DXVECTOR3(1.0f, -1.0f, 1.0f), D3DXVECTOR2(1.0f, 0.0f) },
+		{ D3DXVECTOR3(1.0f, 1.0f, 1.0f), D3DXVECTOR2(1.0f, 1.0f) },
+		{ D3DXVECTOR3(-1.0f, 1.0f, 1.0f), D3DXVECTOR2(0.0f, 1.0f) },
 	};
 
 	D3D10_BUFFER_DESC vertexBufferDesc;
 	vertexBufferDesc.Usage = D3D10_USAGE_DEFAULT;
 	vertexBufferDesc.BindFlags = D3D10_BIND_VERTEX_BUFFER;
-	vertexBufferDesc.ByteWidth = sizeof(SimpleVexter) * 8 ;
+	vertexBufferDesc.ByteWidth = sizeof(SimpleVexter) * 24 ;
 	vertexBufferDesc.CPUAccessFlags = 0;
 	vertexBufferDesc.MiscFlags = 0;
 
@@ -286,20 +315,20 @@ HRESULT InitDevice()
 		3, 1, 0,
 		2, 1, 3,
 
-		0, 5, 4,
-		1, 5, 0,
-
-		3, 4, 7,
-		0, 4, 3,
-
-		1, 6, 5,
-		2, 6, 1,
-
-		2, 7, 6,
-		3, 7, 2,
-
 		6, 4, 5,
 		7, 4, 6,
+
+		11, 9, 8,
+		10, 9, 11,
+
+		14, 12, 13,
+		15, 12, 14,
+
+		19, 17, 16,
+		18, 17, 19,
+
+		22, 20, 21,
+		23, 20, 22
 
 	};
 
@@ -319,6 +348,11 @@ HRESULT InitDevice()
 
 	gpDevice->IASetPrimitiveTopology(D3D10_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
+	hr = D3DX10CreateShaderResourceViewFromFile(gpDevice, L"seafloor.dds", NULL, NULL, &g_pShaderResourceView,NULL);
+
+	if (FAILED(hr))
+		return hr;
+
 	D3DXMatrixIdentity(&worldMatrix);
 
 	D3DXVECTOR3 eye(0.0f, 1.0f, -5.0f);
@@ -328,6 +362,10 @@ HRESULT InitDevice()
 	D3DXMatrixLookAtLH(&viewMatrix, &eye, &at, &up);
 
 	D3DXMatrixPerspectiveFovLH(&prejectionMatrix, (float)D3DX_PI *0.5f, width / (FLOAT)height, 0.1f, 100.0f);
+
+	g_pMatrixVariablePrjection->SetMatrix((float*)&prejectionMatrix);
+	g_pMatrixVariableView->SetMatrix((float*)&viewMatrix);
+	g_pShaderResourceVariableTex->SetResource(g_pShaderResourceView);
 
 	return hr;
 }
@@ -377,9 +415,11 @@ void Render()
 	gpDevice->ClearRenderTargetView(gpRenderTargetView, clearColor);
 
 
-	g_pMatrixVariablePrjection->SetMatrix((float*)&prejectionMatrix);
-	g_pMatrixVariableView->SetMatrix((float*)&viewMatrix);
+
 	g_pMatrixVariableWorld->SetMatrix((float*)worldMatrix);
+
+
+	g_pVectorVariableMeshColor->SetFloatVector((float*)g_vMeshColor);
 
 	D3D10_TECHNIQUE_DESC td;
 	g_pEffectTechnique->GetDesc(&td);
